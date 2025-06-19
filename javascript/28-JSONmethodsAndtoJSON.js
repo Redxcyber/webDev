@@ -52,7 +52,7 @@ console.log("\n");
 
 
 /*
-    …But in the process of development, new properties are added, old properties are 
+    But in the process of development, new properties are added, old properties are 
     renamed and removed. Updating such toString every time can become a pain. 
     We could try to loop over properties in it, but what if the object is complex 
     and has nested objects in properties? We’d need to implement their conversion as well.
@@ -76,7 +76,9 @@ console.log("\n");
     📌 What is JSON.stringify()?
         JSON.stringify() is a method that converts a JavaScript object or value into a JSON-formatted string.
 
-    Useful for:
+
+
+    🧩 Useful for:
         - Saving data in storage (like localStorage)
         - Sending data over a network (e.g., via fetch())
         - Logging objects as readable strings
@@ -346,6 +348,23 @@ console.log( JSON.stringify(meetup, function replacer(key, value) {
 
 
 
+console.log( JSON.stringify(meetup, function replacer(key, value) {
+//   console.log(`${key}: ${value}`);
+  return (key == 'occupiedBy') ? undefined : value;
+}));
+console.log("");
+
+
+/*
+    {
+        "title": "Conference",
+        "participants": [{"name":"John"},{"name":"Alice"}],
+        "place": {"number":23}
+    } 
+*/
+
+
+
 
 
 
@@ -366,6 +385,268 @@ console.log( JSON.stringify(meetup, function replacer(key, value) {
 
 
 
+// 🧪 Example 1: Replacer as an Array (Filter keys)
+user = {
+    name: "Alice",
+    age: 25,
+    password: "secret",
+};
+
+json = JSON.stringify(user, ["name", "age"]);
+console.log(json); // {"name":"Alice","age":25}
+console.log("");
+
+
+
+
+
+// 🧪 Example 2: Replacer as a Function (Transform values)
+user = {
+    name: "Bob",
+    age: 30,
+    password: "hidden",
+};
+
+json = JSON.stringify(user, (key, value) => {
+    // console.log("Key:", key, "Value:", value);
+    if (key === "password") return undefined; // Remove sensitive info
+    return value; // Keep all others
+});
+
+console.log(json); // {"name":"Bob","age":30}
+console.log("");
+
+
+
+
+
+
+// 🛠 Example 3: Modify values on the fly
+let product = {
+  name: "Laptop",
+  price: 1000,
+  discount: 0.1
+};
+
+json = JSON.stringify(product, (key, value) => {
+  if (key === "price") return `$${value}`;
+  return value;
+});
+
+console.log(json); // {"name":"Laptop","price":"$1000","discount":0.1}
+console.log();
+
+
+
+
+// ✅ Real-World Example: Remove Private Fields Before Sending Data
+user = {
+  id: 101,
+  name: "John",
+  email: "john@example.com",
+  _token: "abc123"
+};
+
+const safeJSON = JSON.stringify(user, (key, value) => {
+  if (key.startsWith("_")) return undefined; // Skip private fields
+  return value;
+});
+
+console.log(safeJSON); // {"id":101,"name":"John","email":"john@example.com"}
+console.log();
+
+
+
+
+
+
+// 🧠 Behind the Scenes: How the function works
+user = {
+  name: "Alice",
+  age: 28,
+  email: "alice@example.com",
+  password: "secret123"
+};
+
+// Define a replacer function
+function replacer(key, value) {
+  console.log(`Key: "${key}", Value:`, value);
+
+  // Exclude sensitive data
+  if (key === "password") return undefined;
+
+  // Otherwise return the original value
+  return value;
+}
+
+// Convert the object into a JSON string using the replacer
+jsonString = JSON.stringify(user, replacer, 2);
+
+console.log("\n📦 Final JSON Output:\n", jsonString);
+console.log();
+
+
+
+
+// 🎨 space parameter for pretty formatting
+
+/*
+    space → optional number or string for indentation
+
+    2 means 2 spaces per indentation level.
+    You can increase it to 4, 6, etc., for deeper indentation.
+*/
+
+
+// 1. With space as a Number
+user = { name: "Eve", age: 28 };
+console.log(JSON.stringify(user, null, 2));
+
+
+
+// 2. With space as a String
+user = { name: "Eve", age: 28 };
+console.log(JSON.stringify(user, null, "--"));
+
+
+
+
+// 🧪 Real-world Example: Pretty-print JSON for saving to file
+const settings = {
+  theme: "dark",
+  fontSize: 16,
+  extensions: ["eslint", "prettier"]
+};
+
+const prettyJSON = JSON.stringify(settings, null, 4);
+console.log(prettyJSON);// You might save this to a file or copy to clipboard
+console.log("\n");
+
+
+
+
+
+//------------------------> Custom “toJSON”
+
+/*
+    ✅ What is toJSON()?
+        Like toString for string conversion, an object may provide method 
+        toJSON for to-JSON conversion. JSON.stringify automatically calls it if available.
+
+        toJSON() is a special method that JSON.stringify() calls automatically to 
+        get a customized value for serialization.
+        If present, the value returned by toJSON() is what gets stringified.
+
+*/
+
+room = {
+    number: 23,
+};
+
+meetup = {
+    title: "Conference",
+    date: new Date(Date.UTC(2025, 5, 19)),
+    room
+};
+
+console.log(JSON.stringify(meetup)); 
+
+/*
+  {
+    "title":"Conference",
+    "date":"2017-01-01T00:00:00.000Z",  // (1)
+    "room": {"number":23}               // (2)
+  }
+*/
+
+
+/*
+    Here we can see that date (1) became a string. That’s because all dates have a 
+    built-in toJSON method which returns such kind of string.
+
+    Now let’s add a custom toJSON for our object room (2):
+*/
+
+
+room = {
+    number: 23,
+    toJSON() {
+        return this.number;
+    },
+};
+
+meetup = {
+    title: "Conference",
+    room
+};
+
+console.log(JSON.stringify(room)); // 23
+
+console.log(JSON.stringify(meetup));
+/*
+  {
+    "title":"Conference",
+    "room": 23
+  }
+*/
+console.log();
+
+
+
+
+// 🧪 Example 1: Simplify Object Before Sending
+user = {
+    name: "Alice",
+    age: 30,
+    password: "secret123",
+
+    toJSON() {
+        // Remove sensitive data
+        return {
+            name: this.name,
+            age: this.age,
+        };
+    },
+};
+
+console.log(JSON.stringify(user)); // {"name":"Alice","age":30}
+
+
+
+
+// 🧪 Example 2: Format Dates Nicely
+let event = {
+    title: "Exam",
+    date: new Date("2025-06-19"),
+
+    toJSON() {
+        return {
+            title: this.title,
+            date: this.date.toDateString(), // readable format
+        };
+    },
+};
+
+console.log(JSON.stringify(event));// {"title":"Exam","date":"Tue Jun 10 2025"}
+
+
+
+
+// 🧪 Example 3: Nested objects with toJSON()
+let author = {
+    name: "John",
+    toJSON() {
+        return { name: this.name.toUpperCase() };
+    },
+};
+
+let post = {
+    title: "Learn JS",
+    author
+};
+
+console.log(JSON.stringify(post));// {"title":"Learn JS","author":{"name":"JOHN"}}
+console.log("\n");
 
 
 
@@ -373,4 +654,99 @@ console.log( JSON.stringify(meetup, function replacer(key, value) {
 
 
 
+
+
+
+
+
+
+//------------------------>JSON.parse()
+
+/*
+    ✅ What is JSON.parse()?
+        JSON.parse() is a built-in JavaScript method used to convert a JSON string into a JavaScript object.
+
+    🔧 Syntax: JSON.parse(str, reviver);
+
+        str → A JSON-formatted string.
+        reviver (optional) → A function to transform values before returning the object.
+
+        reviver → Optional function(key,value) that will be called for each (key, value) pair and can transform the value.
+*/
+
+
+
+// 🧪 Example 1: Basic Conversion
+let jsonStr = '{"name": "Alice", "age": 25}';
+
+let obj = JSON.parse(jsonStr);
+console.log(obj); // { name: "Alice", age: 25 }
+
+
+
+
+// 🧪 Example 2: Array Parsing
+let jsonArr = '["apple", "banana", "cherry"]';
+
+let arr = JSON.parse(jsonArr);
+console.log(arr); // ["apple", "banana", "cherry"]
+console.log(arr[2]); // cherry
+
+
+
+
+// 🧪 Example 3: Nested Object
+jsonStr = '{"user": {"name": "Bob", "email": "bob@example.com"}}';
+
+obj = JSON.parse(jsonStr);
+console.log(obj); // { user: { name: 'Bob', email: 'bob@example.com' } }
+console.log(obj.user.name); // Bob
+
+
+
+
+
+
+// 🧪 Example 4: Using reviver function : The reviver function lets you transform or filter keys/values as they are parsed.
+jsonStr = '{"name": "Alice", "birthYear": 2003}';
+
+obj = JSON.parse(jsonStr, function(key, value) {
+  if (key === "birthYear") {
+    return 2025 - value; // Convert to age
+  }
+  return value;
+});
+
+console.log(obj); // 👉 { name: "Alice", birthYear: 25 }
+
+
+
+
+
+
+// 🔄 Common Use Case: Restore Date Objects : Dates are stored as strings in JSON. You can convert them back using reviver:
+json = '{"event":"Exam","date":"2025-06-19T10:00:00.000Z"}';
+
+obj = JSON.parse(json);
+// console.log(obj.date.getDate()); // Error 
+
+/*
+    Whoops! An error!
+
+    The value of meetup.date is a string, not a Date object. How could JSON.parse 
+    know that it should transform that string into a Date?
+
+    Let’s pass to JSON.parse the reviving function as the second argument, that returns 
+    all values “as is”, but date will become a Date:
+*/
+
+obj = JSON.parse(json, (key, value) => {
+  if (key === "date") return new Date(value);
+  return value;
+});
+
+console.log(obj); // { event: 'Exam', date: 2025-06-19T10:00:00.000Z }
+console.log(obj.date instanceof Date); // true
+console.log(obj.date.getDate());   // 19
+console.log(obj.date.getFullYear());   // 2025
 
